@@ -1,4 +1,4 @@
-const Scheme = require('./scheme-model')
+const db = require('../../data/db-config')
 
 /*
   If `scheme_id` does not exist in the database:
@@ -10,16 +10,18 @@ const Scheme = require('./scheme-model')
 */
 const checkSchemeId = async (req, res, next) => {
   try {
-    const scheme = await Scheme.findById(req.params.id)
-    if (!scheme) {
-      next({
-        status: 404,
-        message: `scheme with scheme_id ${scheme} not found`
-      })
-    } else {
-      req.scheme = scheme
-      next()
-    }
+    const existing = await db('schemes')
+      .where('scheme_id', req.params.scheme_id)
+      .first()
+    
+      if (!existing) {
+        next({
+          status: 404,
+          message: `scheme with scheme_id ${req.params.scheme_id} not found`,
+        })
+      } else {
+        next()
+      }
   } catch (err) {
     next(err)
   }
@@ -34,19 +36,16 @@ const checkSchemeId = async (req, res, next) => {
   }
 */
 const validateScheme = async (req, res, next) => {
-  try {
-    const name = await Scheme.find(req.body.name)
-    if (!name || name === undefined) {
-      next({
-        status: 400,
-        message: 'invalid scheme_name'
-      })
-    } else {
-      req.name = name
-      next()
-    }
-  } catch (err) {
-    next(err)
+  const { scheme_name } = req.body
+  if (
+    scheme_name === undefined ||
+    typeof scheme_name !== 'string' ||
+    !scheme_name.trim()  
+  ) {
+    next({
+      status: 400,
+      message: 'invalid scheme_name'
+    })
   }
 }
 
@@ -60,19 +59,19 @@ const validateScheme = async (req, res, next) => {
   }
 */
 const validateStep = async (req, res, next) => {
-  try {
-    const step = await Scheme.findSteps(req.body.step)
-    if (step === NaN || step < 1) {
-      next({
-        status: 400,
-        message: 'invalid step'
-      })
-    } else {
-      req.step = step
-      next()
-    }
-  } catch (err) {
-    next(err)
+  const { instructions, step_number } = req.body
+
+  if (
+    instructions === undefined ||
+    typeof instructions !== 'string' ||
+    !instructions.trim() ||
+    typeof step_number !== 'number' ||
+    step_number < 1
+  ) {
+    const error = { status: 400, message: 'invalid step' }
+    next(error)
+  } else {
+    next()
   }
 }
 
